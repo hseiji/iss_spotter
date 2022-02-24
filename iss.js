@@ -10,6 +10,10 @@ const urlPathCoord = (ip) => {
   return `https://freegeoip.app/json/${ip}`;
 };
 
+const urlPathPass = (coord) => {
+  return `https://iss-pass.herokuapp.com/json/?lat=${coord.latitude}&lon=${coord.longitude}`;
+};
+
 // Fetch IP function
 const fetchMyIP = function(callback) {
   // use request to fetch IP address from JSON API
@@ -49,9 +53,29 @@ const fetchCoordsByIP = (ip , callback) => {
 
     // parsing the data from json to object: only getting latitude and longitude
     const { latitude, longitude } = JSON.parse(body);
-    callback(null, { latitude, longitude });
+    return callback(null, { latitude, longitude });
+  });
+};
+
+const fetchISSFlyOverTimes = function(coords, callback) {
+  request(urlPathPass(coords), (error, response, body) => {
+    // sends back the error for invalid domain, user is offline, etc.
+    if (error) {
+      return callback(error, null);
+    }
+
+    // if non-200 status, assume server error
+    if (response.statusCode !== 200) {
+      const msg = `Status Code ${response.statusCode} when fetching IP. Response: ${body}`;
+      callback(Error(msg), null);
+      return;
+    }
+
+    // parsing the data from json to object: only getting response
+    const data = JSON.parse(body).response;
+    return callback(null, data);
 
   });
 };
 
-module.exports = { fetchMyIP, fetchCoordsByIP };
+module.exports = { fetchMyIP, fetchCoordsByIP, fetchISSFlyOverTimes };
